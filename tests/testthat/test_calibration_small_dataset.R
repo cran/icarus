@@ -24,8 +24,6 @@ test_that("Calibration functions check out with Calmar", {
   wCalesLogit1 <- calibration(data=data_ex2, marginMatrix=margins, colWeights="poids"
                               , method="logit", description=FALSE, bounds=c(0.4,2.2))
 
-  ## TODO : wCalesLogit2 with bounds 0.6/2.2 (no convergence)
-
   ## TODO : test M=3 in Calmar
 
   expect_equal(wCalesLin, calWeights_ex2$wLinear, tolerance=1e-5)
@@ -48,6 +46,27 @@ test_that("Calibration functions check out with Calmar", {
   expect_equal(HTmean(data_ex2$cinema, wCalesRaking), 3.22, tolerance=1e-2)
   expect_equal(HTmean(data_ex2$cinema, wCalesLogit1), 3.14, tolerance=1e-2)
   
+  ## Test errors in convergence
+  expect_error(
+    calibration(data=data_ex2, marginMatrix=margins, colWeights="poids"
+              , method="linear", description=FALSE, popTotal = 300),
+    "no convergence", ignore.case=T)
+  
+  expect_error(
+    calibration(data=data_ex2, marginMatrix=margins, colWeights="poids"
+                , method="raking", description=FALSE, popTotal = 300),
+    "no convergence", ignore.case=T)
+  
+  expect_error(
+    calibration(data=data_ex2, marginMatrix=margins, colWeights="poids"
+                , method="logit", bounds=c(0.5,1.5), description=FALSE, popTotal = 300),
+    "no convergence", ignore.case=T)
+  
+  expect_error(
+    calibration(data=data_ex2, marginMatrix=margins, colWeights="poids"
+                , method="logit", bounds=c(0.6,2.0), description=FALSE),
+    "no convergence", ignore.case=T)
+  
 })
 
 test_that("Penalized calibration checks out", {
@@ -62,15 +81,19 @@ test_that("Penalized calibration checks out", {
 
   costsInfty <- c(Inf, Inf, Inf, Inf)
 
-  wCalesLin <- calibration(data=data_ex2, marginMatrix=margins, colWeights="poids"
-                           , description=FALSE, costs=costsInfty)
+  expect_warning(
+    wCalesLin <- calibration(data=data_ex2, marginMatrix=margins, colWeights="poids"
+                           , description=FALSE, costs=costsInfty),
+    "all costs are infinite", ignore.case=T)
 
   expect_equal(wCalesLin, calWeights_ex2$wLinear, tolerance=1e-4)
 
   ## Test bad specification of infinite costs
   costsInfty2 <- c(-3, Inf, -1, -5000)
-  wCalesLin2 <- calibration(data=data_ex2, marginMatrix=margins, colWeights="poids"
-                              , description=FALSE, costs=costsInfty)
+  expect_warning(
+    wCalesLin2 <- calibration(data=data_ex2, marginMatrix=margins, colWeights="poids"
+                              , description=FALSE, costs=costsInfty2),
+    "all costs are infinite", ignore.case=T)
 
   expect_equal(wCalesLin2, wCalesLin, tolerance=1e-7)
 
@@ -81,7 +104,6 @@ test_that("Penalized calibration checks out", {
 #
 #   print(wPenalized1)
 #   expect_equal(wPenalized1, calWeights_ex2$wLinear, tolerance=1e-7)
-  # TODO : Test non convergence
 
 })
 

@@ -91,7 +91,7 @@ calibAlgorithm <- function(Xs, d, total, q=NULL,
 	wUpdate <- as.vector(d * inverseDistance(Xs %*% lambda * q, params)[[2]])
 
     if (any(is.na(wTemp)) | any(is.infinite(wTemp))) {
-      warning("No convergence")
+      # warning("No convergence")
       return(NULL)
     }
 
@@ -102,9 +102,8 @@ calibAlgorithm <- function(Xs, d, total, q=NULL,
 
     if(l >= maxIter) {
       cont <- FALSE
-      warning(paste("No convergence in ", maxIter, " iterations."))
+      # warning(paste("No convergence in ", maxIter, " iterations."))
   	  return(NULL)
-  	  return(wTemp)
     }
 
     l <- l+1
@@ -134,7 +133,7 @@ calibAlgorithm <- function(Xs, d, total, q=NULL,
 ##### form of the inverse functions of the distance used AND
 ##### its derivative.
 inverseDistanceLinear <- function(x, params=NULL) {
-  return(list((1+x),0))
+  return(list((1+x),1))
 }
 
 inverseDistanceRaking <- function(x, params=NULL) {
