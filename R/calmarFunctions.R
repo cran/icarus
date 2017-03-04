@@ -2,8 +2,6 @@
 # Functions designed so that calibration can be made in a familiar
 # setting for Calmar and Calmar2 users
 
-# Remarque : calmarMatrix = "matrice des marges sans la colonne des noms"
-
 nModalities = function(col)
 {
   return(length(unique(col)))
@@ -60,19 +58,20 @@ dummyModalitiesMatrix = function(entryMatrix)
   return(dmatrix)
 }
 
-# TODO : move out of calmarFunctions ?
-# (or at least should be "private")
+## private function that computes weighted estimates
+## @keywords internal
 HTtotals = function(dummyModalitiesMatrix, weights)
 {
   return(weights%*%dummyModalitiesMatrix)
 }
 
-# "createCalibrationMatrix" ensures compatibility with first version of icarus 
-# (then called gaston 0.0.1)
+## ensures compatibility with first version of icarus 
+## (when it was still called gaston 0.0.1)
+## @keywords internal
 createCalibrationMatrix = function(marginMatrix, data, popVector=TRUE)
 {
-  # Selection des variables de calage dans la table
-  # (ainsi que leur caractere qualitatif / quantitatif)
+  # Select calibration variables in the table
+  # (and indicates whether they are quantitative / categorical)
   selectVector = marginMatrix[,1]
   isQuantitative = as.numeric(marginMatrix[,2])
 
@@ -86,6 +85,9 @@ createCalibrationMatrix = function(marginMatrix, data, popVector=TRUE)
   return(matrixCal)
 }
 
+## Main private function for the creation of the margin matrix
+## @param calmarMatrix matrix of margins without the names column
+## @keywords internal
 formatMargins = function(calmarMatrix, calibrationMatrix, popTotal=NULL, pct=FALSE)
 {
   # Create empty vector of margins
@@ -110,17 +112,8 @@ formatMargins = function(calmarMatrix, calibrationMatrix, popTotal=NULL, pct=FAL
     }
     else
     {
-      ## TODO : change by using parameter pct
-      ## ... this means that pct is considered TRUE by default
-#       if(!is.null(popTotal)) {
-#         popTotalNum <- popTotal
-#       } else {
-#         popTotalNum <- 1
-#       }
-
       n = calmarMatrix[curRow,1]
 
-      ## TODO : change to pct
       ## If categorial margins are not entered as percentages,
       ## do not multiply by popTotal (except if it is popVector !)
       
@@ -128,14 +121,17 @@ formatMargins = function(calmarMatrix, calibrationMatrix, popTotal=NULL, pct=FAL
         warning(paste("All margins in variable ",curRow,"are less than 1 : should they be considered as percentages ?"))
       }
       
-#       if( all(calmarMatrix[curRow,2:(n+1)] >= 1) ) {
-#         popTotalNum <- 1
-#       }
-      
       if(pct) {
         if(is.null(popTotal)) {
           stop("popTotal has to be set when pct is TRUE")
         } else {
+          
+          ## If sum is strictly equal to 100, divide by 100
+          ## (allows for a behavior closer to Calmar2)
+          if( sum(calmarMatrix[curRow,2:(n+1)]) == 100 ) {
+            calmarMatrix[curRow,2:(n+1)] <- calmarMatrix[curRow,2:(n+1)] / 100
+          }
+          
           popTotalNum <- popTotal
         }
       } else {
@@ -408,27 +404,21 @@ correctCoefsCategorical <- function(marginStatsDF_init, marginMatrix, ncol1=1, n
   
 }
 
-## TODO : deprecate, never used
-## Replaced by checkNumberMargins
-# Check validity of marginMatrix
+
+## Check validity of marginMatrix (deprecated)
 checkMarginMatrix = function(marginMatrix) {
+  
+  .Deprecated("checkNumberMargins")
 
   checkMatrix = FALSE
 
   if(is.null(marginMatrix)) return(TRUE) # Case NULL is OK
 
-  # TODO :
-  # Check if there are : 1 names column, 1 modalities column and
-  # n other columns with n = max(modalities)
-
-
-  # Check if sum(lines where modalities >=2) = 1.000000
-
-
   return(checkMatrix)
 }
 
-# Displays number of NAs among margins
+## Displays number of NAs among margins
+## @keywords internal
 missingValuesMargins = function(data, marginMatrix) {
 
   nVar = nrow(marginMatrix)
@@ -444,8 +434,9 @@ missingValuesMargins = function(data, marginMatrix) {
   return(returnMatrix)
 }
 
-# Checks if number of modalities in data matches expected ones according
-# to marginMatrix
+## Checks if number of modalities in data matches expected ones according
+## to marginMatrix
+## @keywords internal
 checkNumberMargins = function(data, marginMatrix) {
 
   returnBool = TRUE
@@ -612,11 +603,11 @@ addMargin <- function(marginMatrix, varName, vecTotals, adjustToOne=TRUE, thresh
     }
   }
 
-  # TODO : adjust vecTotals to 1
+  # Adjust vecTotals to 1
   if( nModality > 1 && sum(vecTotals) != 1  ) {
 
     if(adjustToOne && abs(sum(vecTotals) - 1) < thresholdAdjustToOne) {
-      # TODO : adjust highest value
+      # Adjust highest value
       maxMarginValue <- max(as.numeric(vecTotals))
       maxIndex <- which.max(as.numeric(vecTotals))
       vecTotals[maxIndex] <- maxMarginValue + 1 - sum(vecTotals)
@@ -673,6 +664,7 @@ modifyMargin <- function(marginMatrix, varName, vecTotals, adjustToOne=TRUE, thr
 }
 
 ## Private function that creates margins to the right format
+## @keywords internal
 createFormattedMargins <- function(data, marginMatrix, popTotal=NULL, pct=FALSE) {
 
   if(is.null(marginMatrix)) {
@@ -710,55 +702,3 @@ createFormattedMargins <- function(data, marginMatrix, popTotal=NULL, pct=FALSE)
   return(list(formattedMargins, matrixCal))
 
 }
-
-## TODO : documentation about integrated calibration
-integratedCalibration <- function(dataMen, marginMatrixMen, popMen = NULL,
-                                    dataInd, marginMatrixInd, popInd = NULL,
-                                    identMen="IDENT_LOG", identInd="IDENT_IND",
-                                    colWeights = "POIDS", colCalibratedWeights="POIDS_CALES", method="linear",
-                                    maxIter=2500, description=FALSE, bounds, scale=TRUE, check=TRUE) {
-
-  ## TODO : check that idents given are present in tables
-
-  ## Merge right, by identMen
-  dataSimultaneous <- merge(dataMen, dataInd, by=identMen, all.y=TRUE)
-
-  #### Count number of ind margin variables by men unit
-  # For continuuous variables
-  quantiIndMargins <- marginMatrixInd[marginMatrixInd[,2]=="0",]
-  if(is.null(ncol(quantiIndMargins))) {
-    quantiIndMargins <- quantiIndMargins[1]
-  } else {
-    quantiIndMargins <- quantiIndMargins[,1]
-  }
-  print(quantiIndMargins) # debugging
-  # For discrete variables
-  qualiIndMargins <- marginMatrixInd[marginMatrixInd[,2]!="0",]
-  if(is.null(ncol(qualiIndMargins))) {
-    qualiIndMargins <- qualiIndMargins[1]
-  } else {
-    qualiIndMargins <- qualiIndMargins[,1]
-  }
-  print(qualiIndMargins) # debugging
-
-  ## TODO : quanti variables to dummies
-  ## TODO : aggregate individual variables by identMen
-
-  ### Format margins in one margin table
-  # Margins for dataMen : TODO -> remove
-#   formattedMarginsMen <- createFormattedMargins(dataMen, marginMatrixMen, popMen)[[1]]
-#   matrixCalMen <- createFormattedMargins(dataMen, marginMatrixMen, popMen)[[2]]
-#   # Margins for dataInd
-#   formattedMarginsInd <- createFormattedMargins(dataInd, marginMatrixInd, popInd)[[1]]
-#   matrixCalInd <- createFormattedMargins(dataInd, marginMatrixInd, popInd)[[2]]
-#
-  ## Add individual margins to marginMatrixMen as quantitative variables
-  ## TODO
-
-
-  #### Calibration
-
-  return(dataSimultaneous)
-}
-
-##

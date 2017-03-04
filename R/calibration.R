@@ -13,6 +13,7 @@
 #' @param method The method used to calibrate. Can be "linear", "raking", "logit", "truncated"
 #' @param bounds Two-element vector containing the lower and upper bounds for bounded methods
 #' ("truncated" and "logit")
+#' @param q Vector of q_k weights described in Deville and Sarndal (1992)
 #' @param costs The penalized calibration method will be used, using costs defined by this
 #' vector. Must match the number of rows of marginMatrix. Negative of non-finite costs are given
 #' an infinite cost (coefficient of C^-1 matrix is 0)
@@ -44,7 +45,7 @@
 #' have a large memory size)
 #' @param forceBisection Only used for calibration on tight bounds. Forces the use of the bisection
 #' algorithm to solve calibration on tight bounds
-#' @param colCalibratedWeights The name of the column of final calibrated weights
+#' @param colCalibratedWeights Deprecated. Only used in the scope of calibration function
 #' @param exportDistributionImage File name to which the density plot shown when
 #' description is TRUE is exported. Requires package "ggplot2"
 #' @param exportDistributionTable File name to which the distribution table of before/after
@@ -78,10 +79,20 @@
 #' @return column containing the final calibrated weights
 #'
 #' @export
-calibration = function(data, marginMatrix, colWeights, method="linear", bounds=NULL
+calibration = function(data, marginMatrix, colWeights, method="linear", bounds=NULL, q=NULL
                        , costs=NULL, gap=NULL, popTotal=NULL, pct=FALSE, scale=NULL, description=TRUE
                        , maxIter=2500, check=TRUE, uCostPenalized=1, lambda=NULL, precisionBounds=1e-4, forceSimplex=FALSE, forceBisection=FALSE
-                       , colCalibratedWeights="calWeights", exportDistributionImage=NULL, exportDistributionTable=NULL) {
+                       , colCalibratedWeights, exportDistributionImage=NULL, exportDistributionTable=NULL) {
+  
+  
+  ## Deprecate an argument that is only used in the scope
+  ## of this function
+  if (!missing(colCalibratedWeights)) {
+    warning("argument colCalibratedWeights is deprecated; now private 
+            and defaults to 'calWeights'", 
+            call. = FALSE)
+  }
+  colCalibratedWeights <- "calWeights"
   
   # By default, scale is TRUE when popTotal is not NULL, false otherwise
   if(is.null(popTotal)) {
@@ -90,12 +101,22 @@ calibration = function(data, marginMatrix, colWeights, method="linear", bounds=N
     scale <- TRUE
   }
   
-  ## Clean costs for penalized calibration
-  #   if(!is.null(costs)) {
-  #     costs <- cleanCosts(costs, uCostPenalized)
-  #   }
-  
   if(check) {
+    
+    ## Check if all weights are not NA and greater than zero.
+    checkWeights <- as.numeric(data.matrix(data[colWeights]))
+
+    if( length(checkWeights) <= 0 ) {
+      stop("Weights column has length zero")
+    }
+    
+    if( any((is.na(checkWeights)) ) ) {
+      stop("Some weights are NA")
+    }
+    
+    if( any((checkWeights <= 0) ) ) {
+      stop("Some weights are negative or zero")
+    }
     
     # Check NAs on calibration variables
     matrixTestNA = missingValuesMargins(data, marginMatrix)
@@ -108,6 +129,29 @@ calibration = function(data, marginMatrix, colWeights, method="linear", bounds=N
     # check if number of modalities in calibration variables matches marginMatrix
     if(!checkNumberMargins(data, marginMatrix)) stop("Error in number of modalities.")
     
+    # check that method is specified
+    if(is.null(method)) {
+      warning('Method not specified, raking method selected by default')
+      method <- "raking"
+    }
+    
+    ## Basic checks on vector q:
+    if(!is.null(q)) {
+      
+      if( length(q) !=  nrow(data) ) {
+        stop("Vector q must have same length as data")
+      }
+      
+      if(!is.null(costs)) {
+        stop("q weights not supported with penalized calibration yet")
+      }
+      
+      if(method == "min") {
+        stop("q weights not supported with calibration on min bounds yet")
+      }
+      
+    }
+    
   }
   
   marginCreation <- createFormattedMargins(data, marginMatrix, popTotal, pct)
@@ -119,11 +163,6 @@ calibration = function(data, marginMatrix, colWeights, method="linear", bounds=N
   # (uniform adjustment)
   weights <- as.numeric(data.matrix(data[colWeights]))
   
-  ## For tests
-  #   Xs_glob <<- matrixCal
-  #   total_glob <<- formattedMargins
-  #   d_glob <<- weights
-  
   if(scale) {
     if(is.null(popTotal)) {
       stop("When scale is TRUE, popTotal cannot be NULL")
@@ -132,13 +171,13 @@ calibration = function(data, marginMatrix, colWeights, method="linear", bounds=N
     
   }
   
-  # TODO : add catching of "no convergence" exception
   if(is.null(costs)) {
     
     g <- NULL
     
     if( (is.numeric(bounds)) || (method != "min") ) {
-      g <- calib(Xs=matrixCal, d=weights, total=formattedMargins, method=method, bounds=bounds, maxIter=maxIter)
+      g <- calib(Xs=matrixCal, d=weights, total=formattedMargins, q=q,
+                 method=method, bounds=bounds, maxIter=maxIter)
     } else {
       if( (bounds == "min") || (method == "min")) {
         g <- minBoundsCalib(Xs=matrixCal, d=weights, total=formattedMargins

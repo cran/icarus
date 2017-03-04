@@ -36,14 +36,14 @@ calib <- function(Xs, d, total, q=NULL, method=NULL, bounds = NULL,
 #             updateParameters <- updateParametersCurlingHat
 #           },
           {
-            print('By default, raking method selected')
+            warning('Method not implemented, raking method selected by default')
             params <- NULL
             inverseDistance <- inverseDistanceRaking
             updateParameters <- identity
           }
   )
   } else {
-    print('By default, raking method selected')
+    warning('Method not specified, raking method selected by default')
     params <- NULL
     inverseDistance <- inverseDistanceRaking
     updateParameters <- identity
@@ -124,10 +124,6 @@ calibAlgorithm <- function(Xs, d, total, q=NULL,
   return(g)
 }
 
-
-# TODO: add qk vectors
-# TODO: Explain why params in docs (uses S3 and not S4 methods)
-
 ##### Inverse distance functions
 ##### Each of these functions returns a list of the closed
 ##### form of the inverse functions of the distance used AND
@@ -158,8 +154,6 @@ inverseDistanceLogit <- function(x, bounds) {
   
 }
 
-# TODO : truncated method ?
 # TODO : hyperbolic sine
+# TODO : maybe truncated method ?
 
-# TODO : shaped -> "param" function which updates parameters is
-# contained within distance function

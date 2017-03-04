@@ -59,7 +59,7 @@ test_that("Calibration functions check out with Calmar", {
                 tolerance=1e-6)
   
   ########### Tests with non-response and scale factor
-  ## TODO : check parameters for logit calibration
+
   sampleNR <- sample[sample$responding==1,]
   
   wCalLinNR <- calibration(data=sampleNR, marginMatrix=table_margins_1, colWeights="weight"
@@ -87,6 +87,43 @@ test_that("Calibration functions check out with Calmar", {
   expect_equal(wCalRakingNR2, poptest_calmar_nr$weight_cal_raking_2, tolerance=1e-6)
   expect_equal(wCalLogitNR2, poptest_calmar_nr$weight_cal_logit_2, tolerance=1e-6)
   
+  ## Checks for qk vectors
+  wCalLin_q1 <- calibration(data=sample, marginMatrix=table_margins_1, colWeights="weight"
+                         , q=rep(1,nrow(sample)), method="linear", description=FALSE)
+  
+  wCalLinNR_q1 <- calibration(data=sampleNR, marginMatrix=table_margins_1, colWeights="weight"
+                           , q=rep(1,nrow(sampleNR)), method="linear", description=FALSE, scale=TRUE)
+  
+  expect_equal(wCalLin_q1, poptest_calmar$weight_cal_lin, tolerance=1e-6)
+  expect_equal(wCalLinNR_q1, poptest_calmar_nr$weight_cal_lin, tolerance=1e-6)
+  
+  wCalLin_qTest <- calibration(data=sample, marginMatrix=table_margins_1, colWeights="weight"
+                            , q=sample$qTest, method="linear", description=FALSE)
+  
+  wCalRaking_qTest <- calibration(data=sampleNR, marginMatrix=table_margins_2, colWeights="weight",
+                               q=sampleNR$qTest, method="raking", description=FALSE, 
+                               scale = TRUE, pct=TRUE, popTotal = 50000)
+  
+  expect_equal(wCalLin_qTest, poptest_calmar$weight_cal_lin_qtest, tolerance=1e-2)
+  expect_equal(wCalRaking_qTest, poptest_calmar_nr$weight_cal_raking_2_qtest, tolerance=1e-2)
+  
+  ## Check that warning is correctly thrown when
+  ## user selects an incorrect method
+  expect_warning(
+    calibration(data=sample, marginMatrix=table_margins_1, colWeights="weight"
+                                     , method="truncated", description=FALSE, popTotal = 50000),
+    "not implemented", ignore.case=T)
+  
+  expect_warning(
+    calibration(data=sample, marginMatrix=table_margins_1, colWeights="weight"
+                , method="randomstuff", description=FALSE, popTotal = 50000),
+    "not implemented", ignore.case=T)
+  
+  expect_warning(
+    calibration(data=sample, marginMatrix=table_margins_1, colWeights="weight"
+                , method=NULL, description=FALSE, popTotal = 50000),
+    "not specified", ignore.case=T)
+  
   ## Check that errors are correctly thrown when impossible
   ## calibration margins are entered
   expect_error(
@@ -110,6 +147,41 @@ test_that("Calibration functions check out with Calmar", {
     calibration(data=sample, marginMatrix=table_margins_1, colWeights="weight"
               , method="logit", description=FALSE),
     "must enter LO and UP bounds", ignore.case=T)
+  
+  ## Check errors when q is not valid
+  expect_error(
+    calibration(data=sample, marginMatrix=table_margins_1, colWeights="weight"
+                , q=rep(1,13), method="linear", description=FALSE),
+    "Vector q must have same length as data", ignore.case=T)
+  
+  expect_error(
+    calibration(data=sample, marginMatrix=table_margins_1, colWeights="weight"
+                , q=sample$qTest, method="min", description=FALSE),
+    "not supported", ignore.case=T)
+  
+  expect_error(
+    calibration(data=sample, marginMatrix=table_margins_1, colWeights="weight"
+                , q=sample$qTest, costs = rep(1,nrow(sample)), description=FALSE),
+    "not supported", ignore.case=T)
+  
+  ## Test when margins of categorical variables are
+  ## entered in percentages whose sum is 100 instead of 1
+  table_margins_3 <- table_margins_2
+  table_margins_3[10,3:7] <- c(20,20,20,20,20)
+  table_margins_3[11,3:5] <- c(10,60,30)
+  
+  wCalLin3 <- calibration(data=sample, marginMatrix=table_margins_3, colWeights="weight"
+                          , method="linear", description=FALSE, popTotal=popTotal, pct=TRUE)
+  
+  wCalRaking3 <- calibration(data=sample, marginMatrix=table_margins_3, colWeights="weight"
+                             , method="raking", description=FALSE, popTotal=popTotal, pct=TRUE)
+  
+  wCalLogit3 <- calibration(data=sample, marginMatrix=table_margins_3, colWeights="weight"
+                            , method="logit", bounds=c(0.2,1.3), description=FALSE, popTotal=popTotal, pct=TRUE)
+  
+  expect_equal(wCalLin2, wCalLin3, tolerance=1e-6)
+  expect_equal(wCalRaking2, wCalRaking3, tolerance=1e-6)
+  expect_equal(wCalLogit2, wCalLogit3, tolerance=1e-6)
   
 })
 
