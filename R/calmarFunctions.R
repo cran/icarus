@@ -174,7 +174,6 @@ formatMargins = function(calmarMatrix, calibrationMatrix, popTotal=NULL, pct=FAL
 #' this parameter, calibration is considered to have failed
 #' @return List containing stats on weights and margins
 #' @seealso \code{\link{marginStats}}
-#' @keywords statistics, stats, description, results
 #' @export
 calibrationMarginStats = function(data, marginMatrix, popTotal=NULL, pct=FALSE, colWeights, colCalibratedWeights=NULL, calibThreshold=1.0) {
 
@@ -344,7 +343,6 @@ calibrationMarginStats = function(data, marginMatrix, popTotal=NULL, pct=FALSE, 
 #' this parameter, calibration is considered to have failed
 #' @return Dataframe containing stats on weights and margins
 #' @seealso \code{\link{calibrationMarginStats}}
-#' @keywords statistics, stats, description, results
 #' @export
 marginStats <- function(data, marginMatrix, pct=FALSE, popTotal=NULL, colWeights
                         , colCalibratedWeights=NULL, calibThreshold=1.0) {
@@ -473,6 +471,7 @@ checkNumberMargins = function(data, marginMatrix) {
 #' @param newModality Regrouped modalities of the variable
 #' 
 #' @examples
+#' \dontrun{
 #' ## Suppose we have a calibration matrix and a margin matrix containing information
 #' ## for two categorical variables "X1" (10 modalities) and "X2" (5 modalities)
 #' 
@@ -500,7 +499,7 @@ checkNumberMargins = function(data, marginMatrix) {
 #' # [,1] [,2] [,3]  [,4]  [,5]  [,6]  [,7]  [,8]  [,9]  [,10]
 #' # [1,] "X1" "8"  "0.3" "0.1" "0.1" "0.1" "0.1" "0.1" "0.1" "0.1"
 #' # [2,] "X2" "5"  "0.2" "0.2" "0.2" "0.2" "0.2" "0"   "0"   "0"  
-#' 
+#' }
 #' @export
 regroupCalibrationModalities <- function(calibrationMatrix, marginMatrix, calibrationVariable, vecModalities, newModality) {
   

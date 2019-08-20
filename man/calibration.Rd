@@ -5,12 +5,12 @@
 \title{Calibration on margins}
 \usage{
 calibration(data, marginMatrix, colWeights, method = "linear",
-  bounds = NULL, q = NULL, costs = NULL, gap = NULL, popTotal = NULL,
-  pct = FALSE, scale = NULL, description = TRUE, maxIter = 2500,
-  check = TRUE, uCostPenalized = 1, lambda = NULL,
-  precisionBounds = 1e-04, forceSimplex = FALSE, forceBisection = FALSE,
-  colCalibratedWeights, exportDistributionImage = NULL,
-  exportDistributionTable = NULL)
+  bounds = NULL, q = NULL, costs = NULL, gap = NULL,
+  popTotal = NULL, pct = FALSE, scale = NULL, description = TRUE,
+  maxIter = 2500, check = TRUE, calibTolerance = 1e-06,
+  uCostPenalized = 1, lambda = NULL, precisionBounds = 1e-04,
+  forceSimplex = FALSE, forceBisection = FALSE, colCalibratedWeights,
+  exportDistributionImage = NULL, exportDistributionTable = NULL)
 }
 \arguments{
 \item{data}{The dataframe containing the survey data}
@@ -53,6 +53,10 @@ graph of the density of the ratio calibrated weights / initial weights}
 
 \item{check}{performs a few check about the dataframe. TRUE by default}
 
+\item{calibTolerance}{Tolerance for the distance to an exact solution.
+Could be useful when there is a huge number of margins as the risk of
+inadvertently setting incompatible constraints is higher. Set to 1e-06 by default.}
+
 \item{uCostPenalized}{Unary cost by which every cost is "costs" column is multiplied}
 
 \item{lambda}{The initial ridge lambda used in penalized calibration. By default, the initial
@@ -89,18 +93,18 @@ Performs calibration on margins with several methods and customizable parameters
 \examples{
 N <- 300 ## population total
 ## Horvitz Thompson estimator of the mean: 1.666667
-weightedMean(data_ex2$cinema, data_ex2$poids, N) 
+weightedMean(data_employees$movies, data_employees$weight, N) 
 ## Enter calibration margins:
-mar1 <- c("categ",3,80,90,60)
-mar2 <- c("sexe",2,140,90,0)
-mar3 <- c("service",2,100,130,0)
-mar4 <- c("salaire", 0, 470000,0,0)
+mar1 <- c("category",3,80,90,60)
+mar2 <- c("sex",2,140,90,0)
+mar3 <- c("department",2,100,130,0)
+mar4 <- c("salary", 0, 470000,0,0)
 margins <- rbind(mar1, mar2, mar3, mar4)
 ## Compute calibrated weights with raking ratio method
-wCal <- calibration(data=data_ex2, marginMatrix=margins, colWeights="poids"
+wCal <- calibration(data=data_employees, marginMatrix=margins, colWeights="weight"
                             , method="raking", description=FALSE)
 ## Calibrated estimate: 2.471917
-weightedMean(data_ex2$cinema, wCal, N)
+weightedMean(data_employees$movies, wCal, N)
 
 }
 \references{
@@ -117,4 +121,3 @@ Le Guennec, Josiane, and Olivier Sautory. "Calmar 2: Une nouvelle version
 de la macro calmar de redressement d'echantillon par calage." Journees de Methodologie Statistique, 
 Paris. INSEE (2002).
 }
-
