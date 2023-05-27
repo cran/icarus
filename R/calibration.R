@@ -1,4 +1,4 @@
-# copyright (C) 2014-2016 A.Rebecq
+# copyright (C) 2014-2023 A.Rebecq
 # This function executes easy calibration with just data and matrix of margins
 
 #########
@@ -10,9 +10,9 @@
 #' in the calibration problem
 #' @param colWeights The name of the column containing the initial weights in the survey
 #' dataframe
-#' @param method The method used to calibrate. Can be "linear", "raking", "logit", "truncated"
+#' @param method The method used to calibrate. Can be "linear", "raking", "logit"
 #' @param bounds Two-element vector containing the lower and upper bounds for bounded methods
-#' ("truncated" and "logit")
+#' ("logit")
 #' @param q Vector of q_k weights described in Deville and Sarndal (1992)
 #' @param costs The penalized calibration method will be used, using costs defined by this
 #' vector. Must match the number of rows of marginMatrix. Negative of non-finite costs are given
@@ -184,7 +184,7 @@ calibration = function(data, marginMatrix, colWeights, method="linear", bounds=N
       g <- calib(Xs=matrixCal, d=weights, total=formattedMargins, q=q,
                  method=method, bounds=bounds, maxIter=maxIter, calibTolerance=calibTolerance)
     } else {
-      if( (bounds == "min") || (method == "min")) {
+      if( (any(identical(bounds,"min"))) || (method == "min")) {
         g <- minBoundsCalib(Xs=matrixCal, d=weights, total=formattedMargins
                             , q=rep(1,nrow(matrixCal)), maxIter=maxIter, description=description, precisionBounds=precisionBounds, forceSimplex=forceSimplex, forceBisection=forceBisection)
       }
@@ -233,7 +233,7 @@ calibration = function(data, marginMatrix, colWeights, method="linear", bounds=N
         writeLines(paste("\t U bound : ",bounds[2], sep=""))
       }
       
-      if( (bounds == "min") || (method == "min") ) {
+      if( (any(identical(bounds,"min"))) || (method == "min") ) {
         writeLines(paste("\t L bound : ",round(min(g),4), sep=""))
         writeLines(paste("\t U bound : ",round(max(g),4), sep=""))
       }

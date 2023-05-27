@@ -1,13 +1,13 @@
-# copyright (C) 2014-2016 A.Rebecq
+# copyright (C) 2014-2023 A.Rebecq
 # Functions designed so that calibration can be made in a familiar
 # setting for Calmar and Calmar2 users
 
-nModalities = function(col)
+nModalities <- function(col)
 {
   return(length(unique(col)))
 }
 
-calibrationMatrix = function(entryMatrix, popVector=TRUE, isQuantitative=NULL)
+calibrationMatrix <- function(entryMatrix, popVector=TRUE, isQuantitative=NULL)
 {
   if(is.null(isQuantitative)) {
     isQuantitative <- rep(FALSE, ncol(entryMatrix))
@@ -51,7 +51,7 @@ calibrationMatrix = function(entryMatrix, popVector=TRUE, isQuantitative=NULL)
   return(calibrationMatrix)
 }
 
-dummyModalitiesMatrix = function(entryMatrix)
+dummyModalitiesMatrix <- function(entryMatrix)
 {
   dmatrix = calibrationMatrix(entryMatrix)
   dmatrix[dmatrix!=0] = 1
@@ -60,7 +60,7 @@ dummyModalitiesMatrix = function(entryMatrix)
 
 ## private function that computes weighted estimates
 ## @keywords internal
-HTtotals = function(dummyModalitiesMatrix, weights)
+HTtotals <- function(dummyModalitiesMatrix, weights)
 {
   return(weights%*%dummyModalitiesMatrix)
 }
@@ -68,7 +68,7 @@ HTtotals = function(dummyModalitiesMatrix, weights)
 ## ensures compatibility with first version of icarus 
 ## (when it was still called gaston 0.0.1)
 ## @keywords internal
-createCalibrationMatrix = function(marginMatrix, data, popVector=TRUE)
+createCalibrationMatrix <- function(marginMatrix, data, popVector=TRUE)
 {
   # Select calibration variables in the table
   # (and indicates whether they are quantitative / categorical)
@@ -88,7 +88,7 @@ createCalibrationMatrix = function(marginMatrix, data, popVector=TRUE)
 ## Main private function for the creation of the margin matrix
 ## @param calmarMatrix matrix of margins without the names column
 ## @keywords internal
-formatMargins = function(calmarMatrix, calibrationMatrix, popTotal=NULL, pct=FALSE)
+formatMargins <- function(calmarMatrix, calibrationMatrix, popTotal=NULL, pct=FALSE)
 {
   # Create empty vector of margins
   cMatrixCopy = calmarMatrix
@@ -175,7 +175,7 @@ formatMargins = function(calmarMatrix, calibrationMatrix, popTotal=NULL, pct=FAL
 #' @return List containing stats on weights and margins
 #' @seealso \code{\link{marginStats}}
 #' @export
-calibrationMarginStats = function(data, marginMatrix, popTotal=NULL, pct=FALSE, colWeights, colCalibratedWeights=NULL, calibThreshold=1.0) {
+calibrationMarginStats <- function(data, marginMatrix, popTotal=NULL, pct=FALSE, colWeights, colCalibratedWeights=NULL, calibThreshold=1.0) {
 
   displayCalibratedWeights <- TRUE
 
@@ -349,10 +349,11 @@ marginStats <- function(data, marginMatrix, pct=FALSE, popTotal=NULL, colWeights
 
   listMarginStats <- calibrationMarginStats(data, marginMatrix, popTotal, pct, colWeights
                                             , colCalibratedWeights, calibThreshold)
-  marginStatsDF <- do.call(rbind.data.frame, listMarginStats)
+  marginStatsDF <- marginStatsDF_gen(listMarginStats)
 
   ## Compute column difference
   marginStatsDF <- marginStatsDF[,-c(4)]
+  
   if( is.null(colCalibratedWeights) ) {
 
     marginStatsDF <- marginStatsDF[,-c(2)] # Do not display calibrated weigths column
@@ -377,6 +378,31 @@ marginStats <- function(data, marginMatrix, pct=FALSE, popTotal=NULL, colWeights
 
   return(marginStatsDF)
 
+}
+
+# Private function, created to deal with a new warning  
+# appearing in `rbind.data.frame` that is properly handled in the rest of the code
+marginStatsDF_gen <- function(listMarginStats) {
+  return_df <- tryCatch(
+  {
+    do.call(rbind.data.frame, listMarginStats)
+  },
+  error=function(cond) {
+    message(cond)
+    return(NA)
+  },
+  warning=function(cond) {
+    warn_message <- cond$message
+    if( !(grepl("number of columns of result", warn_message, fixed = T)) ||
+        !(grepl("is not a multiple of vector length", warn_message, fixed = T)) ||
+        !(grepl("of arg", warn_message, fixed = T)) ) {
+      message(cond)
+      return(NA)
+    } else {
+      suppressWarnings(do.call(rbind.data.frame, listMarginStats))
+    }
+  })
+  return_df
 }
 
 ## Private function, used in marginMatrix to account for
@@ -404,7 +430,7 @@ correctCoefsCategorical <- function(marginStatsDF_init, marginMatrix, ncol1=1, n
 
 
 ## Check validity of marginMatrix (deprecated)
-checkMarginMatrix = function(marginMatrix) {
+checkMarginMatrix <- function(marginMatrix) {
   
   .Deprecated("checkNumberMargins")
 
@@ -417,7 +443,7 @@ checkMarginMatrix = function(marginMatrix) {
 
 ## Displays number of NAs among margins
 ## @keywords internal
-missingValuesMargins = function(data, marginMatrix) {
+missingValuesMargins <- function(data, marginMatrix) {
 
   nVar = nrow(marginMatrix)
   marginNames = marginMatrix[,1]
@@ -435,7 +461,7 @@ missingValuesMargins = function(data, marginMatrix) {
 ## Checks if number of modalities in data matches expected ones according
 ## to marginMatrix
 ## @keywords internal
-checkNumberMargins = function(data, marginMatrix) {
+checkNumberMargins <- function(data, marginMatrix) {
 
   returnBool = TRUE
   marginNames = marginMatrix[,1]
